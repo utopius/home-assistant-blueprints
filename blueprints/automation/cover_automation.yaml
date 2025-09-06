@@ -856,8 +856,18 @@ variables:
   shading_full_start_brightness_condition: "{{ is_shading_brightness_sensor_defined and states(light_sensor) | float(default=shading_sun_brightness_start_full_shading) > shading_sun_brightness_start_full_shading }}"
   shading_full_start_temperature_condition: "{{ is_temperature_sensor_outside_available and states(temperature_sensor_outside) | float(default=shading_full_min_temperature_outside) > shading_full_min_temperature_outside }}"
   shading_brightness_end_condition: "{{ is_shading_brightness_sensor_defined and states(light_sensor) | float(default=shading_sun_brightness_end) < shading_sun_brightness_end }}"
-  weather_cloudy: "{{ state_attr(shading_forecast_sensor, 'cloud_coverage') | float > 50}}"
-  target_shading_position: "{{ position_shade if ((is_temperature_sensor_outside_available and shading_full_start_temperature_condition) or (is_shading_brightness_sensor_available and shading_full_start_brightness_condition)) else position_shade_light }}"
+  cloud_coverage: "{{ state_attr(shading_forecast_sensor, 'cloud_coverage') | float > 50}}"
+  cloud_coverage_in_range: "{{ cloud_coverage > 50 and cloud_coverage < 85}}"
+  weather_cloudy: "{{ states(shading_forecast_sensor) in ['cloudy'] }}"
+  use_full_shading: >-
+    {{
+      (is_temperature_sensor_outside_available and shading_full_start_temperature_condition) or 
+      (is_shading_brightness_sensor_available and shading_full_start_brightness_condition)
+    }}
+  target_shading_position: >-
+    {{
+      position_shade if use_full_shading else position_shade_light
+    }}
 
   brightness_below_threshold_condition: "{{ not is_default_brightness_sensor_available or (is_brightness_enabled and now() >= today_at(time_down_early_today) and brightness_down_condition) }}"
   drive_down_condition: "{{ brightness_below_threshold_condition or now() >= today_at(time_down_late_today)}}"
@@ -959,20 +969,18 @@ actions:
           - alias: "Are brightness conditions met"
             or:
             - alias: "No brightness sensor"
-              condition: template
-              value_template: "{{ not is_shading_brightness_sensor_defined }}"
+              and:
+              - "{{ not is_shading_brightness_sensor_defined }}"
             - alias: "Sunny brightness conditions"
               and:
               - "{{ is_shading_brightness_sensor_defined }}"
               - "{{ states(shading_forecast_sensor) in ['sunny', 'partlycloudy'] }}"
-              - "{{ is_shading_brightness_sensor_defined }}"
               - "{{ shading_start_condition }}"
             - alias: "Cloudy brightness conditions"
               and:
               - "{{ is_shading_brightness_sensor_defined }}"
-              - "{{ states(shading_forecast_sensor) in ['cloudy'] }}"
               - "{{ weather_cloudy }}"
-              - "{{ is_shading_brightness_sensor_defined }}"
+              - "{{ cloud_coverage_in_range }}"
               - "{{ shading_start_cloudy_condition }}"
         sequence:
           - variables:
