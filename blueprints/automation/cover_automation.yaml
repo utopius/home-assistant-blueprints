@@ -646,7 +646,7 @@ trigger_variables:
   cover_entity: !input cover_entity
   default_sun_sensor: !input default_sun_sensor
   default_brightness_sensor: !input default_brightness_sensor
-  is_brightness_enabled: '{{ ''auto_brightness_enabled'' in auto_options }}'
+  is_brightness_enabled: "{{ 'auto_brightness_enabled' in auto_options }}"
   is_up_enabled: "{{ 'auto_up_enabled' in auto_options }}"
   is_down_enabled: "{{ 'auto_down_enabled' in auto_options }}"
   is_ventilation_enabled: "{{ 'auto_ventilate_enabled' in auto_options }}"
@@ -831,11 +831,23 @@ variables:
   shading_position: "{{ position_shade }}"
   shading_start_inside_temp_high_enough: "{{ is_temperature_sensor_inside_available and states(temperature_sensor_inside) | float(default=shading_min_temperature_inside) > shading_min_temperature_inside }}"
   shading_start_outside_temp_high_enough: "{{ is_temperature_sensor_outside_available and states(temperature_sensor_outside) | float(default=shading_min_temperature_outside) > shading_min_temperature_outside }}"
-  time_for_drive_up: "{% set min = today_at(time_up_late_today) - timedelta(minutes = 5) %} {% set max = today_at(time_up_late_today) + timedelta(minutes = 5) %} {% set now = now() %}{{ (now >= min and now <= max) }}"
 
   # Conditions
-  brightness_up_condition: '{{ is_brightness_enabled and is_default_brightness_sensor_defined and (states(default_brightness_sensor) | float(default=brightness_up) > brightness_up) }}'
-  brightness_down_condition: '{{ is_brightness_enabled and is_default_brightness_sensor_defined and (states(default_brightness_sensor) | float(default=brightness_down) < brightness_down) }}'
+  brightness_up_condition: >-
+    {{
+      is_brightness_enabled and is_default_brightness_sensor_available and
+      (states(default_brightness_sensor) | float(default=brightness_up) > brightness_up)
+    }}
+  brightness_up_in_time_range_condition: >-
+    {{
+      now() >= today_at(time_up_early_today) and
+      now() <= today_at(time_up_late_today)
+    }}
+  brightness_down_condition: >- 
+    {{
+      is_brightness_enabled and is_default_brightness_sensor_available and
+      (states(default_brightness_sensor) | float(default=brightness_down) < brightness_down)
+    }}
   sun_azimuth_is_in_range_condition: >-
     {{
       state_attr(default_sun_sensor, 'azimuth') | float(default=shading_azimuth_start) > shading_azimuth_start and
@@ -872,6 +884,7 @@ variables:
   brightness_below_threshold_condition: "{{ not is_default_brightness_sensor_available or (is_brightness_enabled and now() >= today_at(time_down_early_today) and brightness_down_condition) }}"
   drive_down_condition: "{{ brightness_below_threshold_condition or now() >= today_at(time_down_late_today)}}"
   minimum_brightness_condition: "{{ not is_default_brightness_sensor_available or is_minimum_brightness_satisfied}}"
+  time_up_condition: "{% set min = today_at(time_up_late_today) - timedelta(minutes = 5) %} {% set max = today_at(time_up_late_today) + timedelta(minutes = 5) %} {% set now = now() %}{{ (now >= min and now <= max) }}"
 condition:
   - condition: state
     entity_id: !input is_enabled_input
@@ -1025,19 +1038,18 @@ actions:
       - alias: "Daytime opening"
         conditions:
           - and:
-            - "{{ is_up_enabled }}"
-            - or:
-              - and:
-                - '{{ is_brightness_enabled }}'
-                - '{{ is_default_brightness_sensor_defined }}'
-                - '{{ brightness_up_condition }}'
-                - "{{ now() >= today_at(time_up_early_today) }}"
-                - "{{ now() < today_at(time_down_early_today) - timedelta(seconds = 5) }}"
-              - "{{ time_for_drive_up }}"
-            - alias: "After sunrise"
-              condition: state
-              entity_id: sun.sun
-              state: above_horizon
+              - "{{ is_up_enabled }}"
+              - or:
+                  - and:
+                      - "{{ is_brightness_enabled }}"
+                      - "{{ is_default_brightness_sensor_available }}"
+                      - "{{ brightness_up_condition }}"
+                      - "{{ brightness_up_in_time_range_condition }}"
+                  - "{{ time_up_condition }}"
+              - alias: "After sunrise"
+                condition: state
+                entity_id: sun.sun
+                state: above_horizon
         sequence:
           - variables:
               target_position: "{{ position_open }}"
