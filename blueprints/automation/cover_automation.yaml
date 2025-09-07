@@ -24,8 +24,7 @@ blueprint:
         default_brightness_sensor:
           name: "\U0001F505 Default Brightness Sensor"
           description:
-            This default brightness sensor can be defined here, which is
-            used for daily up and down.
+            The default brightness sensor is used for daily up and down.
           default: []
           selector:
             entity:
@@ -379,6 +378,9 @@ blueprint:
               mode: slider
         light_sensor:
           name: Brightness Sensor For Sun Shading
+          description:
+            "This sensor is used to control shading,
+            together with sun elevation, azimuth, temperature and weather conditions."
           default:
           selector:
             entity:
@@ -411,12 +413,12 @@ blueprint:
               unit_of_measurement: lx
               step: 1.0
               mode: slider
-        shading_sun_brightness_end:
-          name: "\U0001F975 Sun Shading Brightness End Value"
+        light_threshold_cloudy:
+          name: "\U0001F975 Sun Shading Brightness Start Cloudy Value"
           description:
-            The brightness value from which shading is no longer necessary.
-            (Must be below the value of brightness start!).
-          default: 25000
+            "The minimum brightness value from which shading should start.
+            (Must be above the value of brightness end!)"
+          default: 27000
           selector:
             number:
               min: 0.0
@@ -424,12 +426,12 @@ blueprint:
               unit_of_measurement: lx
               step: 1.0
               mode: slider
-        light_threshold_cloudy:
-          name: "\U0001F975 Sun Shading Brightness Start Cloudy Value"
+        shading_sun_brightness_end:
+          name: "\U0001F975 Sun Shading Brightness End Value"
           description:
-            "The minimum brightness value from which shading should start.
-            (Must be above the value of brightness end!)"
-          default: 27000
+            The brightness value from which shading is no longer necessary.
+            (Must be below the value of brightness start!).
+          default: 25000
           selector:
             number:
               min: 0.0
@@ -487,8 +489,7 @@ blueprint:
                 device_class: temperature
         shading_min_temperature_outside:
           name: "\U0001F975 Sun Shading Temperature Sensor Minimum Value"
-          description: Minimum temperature for sensor above over which shading should
-            occur.
+          description: Minimum outside temperature over which shading should occur.
           default: 20
           selector:
             number:
@@ -499,8 +500,7 @@ blueprint:
               unit_of_measurement: °C
         shading_full_min_temperature_outside:
           name: "\U0001F975 Full Sun Shading Temperature Sensor Minimum Value"
-          description: Minimum temperature for sensor above over which full shading should
-            occur.
+          description: Minimum outside temperature over which full shading should occur.
           default: 24
           selector:
             number:
