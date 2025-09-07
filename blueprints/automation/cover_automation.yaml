@@ -873,7 +873,7 @@ variables:
   weather_cloudy: "{{ states(shading_forecast_sensor) in ['cloudy'] }}"
   use_full_shading: >-
     {{
-      (is_temperature_sensor_outside_available and shading_full_start_temperature_condition) or 
+      (is_temperature_sensor_outside_available and shading_full_start_temperature_condition) and
       (is_shading_brightness_sensor_available and shading_full_start_brightness_condition)
     }}
   target_shading_position: >-
