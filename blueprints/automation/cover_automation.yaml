@@ -1008,6 +1008,9 @@ actions:
           - value_template: "{{ now() >= today_at(time_up_late_today) }}"
             condition: template
             alias: "After drive-up period"
+          - value_template: "{{ not drive_down_condition }}"
+            alias: "Drive-down condition must not match"
+            condition: template
           - alias: "Not triggered by contact open"
             not:
             - condition: trigger
